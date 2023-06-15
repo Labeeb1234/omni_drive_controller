@@ -16,6 +16,8 @@
 #include "rclcpp_lifecycle/state.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
 
+#include "omni_drive_controller/robot_description.hpp"
+
 // optional but recommended
 //#include "omni_drive_controller/visibility_control.h"
 

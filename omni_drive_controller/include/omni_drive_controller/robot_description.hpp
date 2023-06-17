@@ -16,10 +16,10 @@ namespace omni_drive_controller
 
     struct RobotVelocity
     {
-        double v_x;
-        double v_y;
-        double omega;
-    };
+        double u;
+        double v;
+        double r;
+    }; 
 
     struct Pose
     {

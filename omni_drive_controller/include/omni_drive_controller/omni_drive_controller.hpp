@@ -55,6 +55,9 @@ class OmniDriveController : public controller_interface::ControllerInterface
         std::vector<std::string> rim_names_;
         // vector to store wheel handle param
         std::vector<RimHandle> registered_rim_names_;
+        
+        // robot physical paramters from robot_description library
+        RobotParams robot_params_{0.03, 0.25};
     
         // using stamped or unstamped param variable
         bool use_stamped_vel_= true;
@@ -62,7 +65,7 @@ class OmniDriveController : public controller_interface::ControllerInterface
         rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr odometry_transform_publisher_ = nullptr;
 
         // Timeout to consider cmd_vel commands old
-        std::chrono::milliseconds cmd_vel_timeout_ {500};
+        std::chrono::milliseconds cmd_vel_timeout_{500};
 
         // variable for subscribers to the topic type geometry_msgs/msg/Twist
         bool subscriber_is_active = false;
@@ -79,11 +82,6 @@ class OmniDriveController : public controller_interface::ControllerInterface
         void velocityCommandUnstampedCallback(const geometry_msgs::msg::Twist::SharedPtr cmd_vel);
 
         geometry_msgs::msg::TwistStamped::SharedPtr cmd_vel_;
-    
-        // omni robot physical properties
-        double rim_radius_ = 0.03; //[m]
-        double rim_separation_ = 0.242; //[m]
-        double alpha_; //[rads]
 
 };
 

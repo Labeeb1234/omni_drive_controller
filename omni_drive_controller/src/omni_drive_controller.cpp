@@ -1,6 +1,13 @@
 #include <chrono> 
 #include <cmath>
 #include <exception>
+#include <utility>
+#include <vector>
+#include <queue>
+#include <memory>
+
+
+#include "controller_interface/controller_interface.hpp"
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
@@ -10,6 +17,7 @@
 #include "tf2/LinearMath/Quaternion.h"
 
 #include "omni_drive_controller/omni_drive_controller.hpp"
+
 
 
 namespace
@@ -47,7 +55,7 @@ namespace omni_drive_controller
 
         try
         {
-            auto_declare<std::vector<std::string>>("rim_names", std::vector<std::string>());
+            auto_declare<std::vector<std::string>>("rim_names", robot_params_.rim_names);
             auto_declare<double>("rim_radius", robot_params_.rim_radius);
             auto_declare<double>("wheel_separation", robot_params_.wheel_separation);
             auto_declare<double>("cmd_vel_timeout", cmd_vel_timeout_.count()/1000);
@@ -89,25 +97,33 @@ namespace omni_drive_controller
     }
 
     // configuring the robot parametrs for the loaded omni_drive_controller
-    controller_interface::CallbackReturn  OmniDriveController::on_configure(const rclcpp_lifecycle::State  &previous_state)
+    CallbackReturn  OmniDriveController::on_configure(const rclcpp_lifecycle::State  &previous_state)
     {
-        auto logger = node_->get_logger();
+        auto logger = get_node()->get_logger();
 
         RCLCPP_DEBUG(logger, "Called on_configure. Previous state was %s", previous_state.label());
-        rim_names_. = node_->get_parameter("rim_names").as_string_array();
+        rim_names_ = get_node()->get_parameter("rim_names").as_string_array();
 
         if(rim_names_.size() != WHEEL_QUANTITY)
         {
             RCLCPP_ERROR(logger, "The number wheels/rims [%zu] and required wheel/rim number [%zu] are different", rim_names_.size(), WHEEL_QUANTITY);
-            return controller_interface::CallbackReturn::ERROR;
+            return CallbackReturn::ERROR;
         }
-        if(rim_name_.empty())
+        if(rim_names_.empty())
         {
             RCLCPP_ERROR(logger, "Wheel/rim name parametres missing");
-            return controller_interface::CallbackReturn::ERROR;
+            return CallbackReturn::ERROR;
         }
 
+
     }
+
+    robot_params_.rim_radius = get_node()->get_parameter("rim_radius").as_double();
+    robot_params_.wheel_separation = get_node()->get_parameter("wheel_separation").as_double();
+
+    cmd_vel_timeout_ = 
+
+
 
 
 

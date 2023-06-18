@@ -7,6 +7,8 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <utility>
+
 
 #include "controller_interface/controller_interface.hpp"
 #include "geometry_msgs/msg/twist.hpp"
@@ -17,74 +19,69 @@
 #include "tf2_msgs/msg/tf_message.hpp"
 
 #include "omni_drive_controller/robot_description.hpp"
+#include "omni_drive_controller/kinematics.hpp"
 
 // optional but recommended
 //#include "omni_drive_controller/visibility_control.h"
 
 namespace omni_drive_controller
 {
-class OmniDriveController : public controller_interface::ControllerInterface
+using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+
+class OmniDriveController : public controller_interface::ControllerInterface 
 {
-    public:
-        OmniDriveController();
+ public:
+  OmniDriveController();
+  controller_interface::return_type init(const std::string &controller_name) override;
+  controller_interface::InterfaceConfiguration command_interface_configuration() const override;
+  controller_interface::InterfaceConfiguration state_interface_configuration() const override;
+  CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
+  CallbackReturn on_activate(const rclcpp_lifecycle::State &previous_state) override;
+  CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
+  CallbackReturn on_cleanup(const rclcpp_lifecycle::State &previous_state) override;
+  CallbackReturn on_error(const rclcpp_lifecycle::State &previous_state) override;
+  CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
+  controller_interface::return_type update() override;
+  ~OmniDriveController();
 
-        // some public variables declared in our controller class to override functions by state
-        controller_interface::return_type init(const std::string &controller_name) override;
-        controller_interface::InterfaceConfiguration command_interface_configuration() const override;
-        controller_interface::InterfaceConfiguration state_interface_configuration()const override;
-        // override variables for the state of controller
-        controller_interface::CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
-        controller_interface::CallbackReturn on_activate(const rclcpp_lifecycle::State &previous_state) override;
-        controller_interface::CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
-        controller_interface::CallbackReturn on_cleanup(const rclcpp_lifecycle::State &previous_state) override;
-        controller_interface::CallbackReturn on_error(const rclcpp_lifecycle::State &previous_state) override;
-        controller_interface::CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
-        controller_interface::return_type update() override;
-    
-        ~OmniDriveController();
+ protected:
+  struct WheelHandle 
+  {
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> velocity_state;
+    std::reference_wrapper<hardware_interface::LoanedCommandInterface> velocity_command;
+  };
 
-    protected:
-        // structure to for storing velocity commands and states of the omni_robot
-        struct RimHandle
-        {
-            std::reference_wrapper<const hardware_interface::LoanedStateInterface> velocity_state;
-            std::reference_wrapper<hardware_interface::LoanedCommandInterface> velocity_command;
-        };
+  std::vector<std::string> rim_names_;
+  std::vector<WheelHandle> registered_rim_handles_;
 
-        // vector to store rim_name param
-        std::vector<std::string> rim_names_;
-        // vector to store wheel handle param
-        std::vector<RimHandle> registered_rim_names_;
-        
-        // robot physical paramters from robot_description library
-        RobotParams robot_params_{0.03, 0.25};
-    
-        // using stamped or unstamped param variable
-        bool use_stamped_vel_= true;
+  // Default parameters for omni_drive_robot
+  RobotParams robot_params_{0.03, 0.25};
 
-        rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr odometry_transform_publisher_ = nullptr;
+  bool use_stamped_vel_ = true;
+  // declaring object for kinematics class
+  kinematics omni_robot_kinematics_;
 
-        // Timeout to consider cmd_vel commands old
-        std::chrono::milliseconds cmd_vel_timeout_{500};
+  // Timeout to consider cmd_vel commands old
+  std::chrono::milliseconds cmd_vel_timeout_{500};
 
-        // variable for subscribers to the topic type geometry_msgs/msg/Twist
-        bool subscriber_is_active = false;
-        rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr vel_cmd_subscriber = nullptr;
-        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr vel_cmd_unstamped_ = nullptr;
+  bool subscriber_is_active_ = false;
+  rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr vel_cmd_subscriber_ = nullptr;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr
+    vel_cmd_unstamped_subscriber_ = nullptr;
 
-        double publish_rate_ = 50.0;
-        rclcpp::Duration publish_period_{0, 0};
-        rclcpp::Time previous_publish_timestamp_{0};
+  rclcpp::Time previous_update_timestamp_{0};
 
-    private:
-        // functions to return velocity callbacks from the topics /cmd_vel
-        void velocityCommandStampedCallback(const geometry_msgs::msg::TwistStamped::SharedPtr cmd_vel);
-        void velocityCommandUnstampedCallback(const geometry_msgs::msg::Twist::SharedPtr cmd_vel);
+  double publish_rate_{50.0};
+  rclcpp::Duration publish_period_{0, 0};
+  rclcpp::Time previous_publish_timestamp_{0};
 
-        geometry_msgs::msg::TwistStamped::SharedPtr cmd_vel_;
+ private:
+  void velocityCommandStampedCallback(const geometry_msgs::msg::TwistStamped::SharedPtr cmd_vel);
+  void velocityCommandUnstampedCallback(const geometry_msgs::msg::Twist::SharedPtr cmd_vel);
+  geometry_msgs::msg::TwistStamped::SharedPtr cmd_vel_;
 
 };
 
-}
+}  
 
-#endif
+#endif 

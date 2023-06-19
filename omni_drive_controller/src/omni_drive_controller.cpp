@@ -8,15 +8,17 @@
 
 
 #include "controller_interface/controller_interface.hpp"
-
+#include "controller_interface/controller_interface_base.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "rclcpp/logging.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 
 #include "omni_drive_controller/omni_drive_controller.hpp"
+
 
 
 
@@ -44,10 +46,15 @@ namespace omni_drive_controller
         : controller_interface::ControllerInterface()
         , cmd_vel_(std::make_shared<geometry_msgs::msg::TwistStamped>()) {}
     
-    controller_interface::return_type init(const std::string &controller_name)
+    controller_interface::return_type init(const std::string &controller_name, const std::string &namespace_="",const rclcpp::NodeOptions & node_options =
+      rclcpp::NodeOptions()
+        .allow_undeclared_parameters(true)
+        .automatically_declare_parameters_from_overrides(true))
     {
+        
+        
         // lifecycle node initializing
-        auto ret = controller_interface::init(controller_name);;
+        auto ret = ControllerInterface::init(controller_name, namespace_);
         if(ret  != controller_interface::return_type::OK)
         {
             return ret;
@@ -55,7 +62,7 @@ namespace omni_drive_controller
 
         try
         {
-            auto_declare<std::vector<std::string>>("rim_names", robot_params_.rim_names);
+            auto_declare<std::vector<std::string>>("rim_names", std::vector<std::string>());
             auto_declare<double>("rim_radius", robot_params_.rim_radius);
             auto_declare<double>("wheel_separation", robot_params_.wheel_separation);
             auto_declare<double>("cmd_vel_timeout", cmd_vel_timeout_.count()/1000);
